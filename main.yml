@@ -1,2 +1,0 @@
-- name: Typescript compiler
-  uses: iCrawl/action-tsc@v1
