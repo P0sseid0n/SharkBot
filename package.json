@@ -3,7 +3,9 @@
 	"version": "1.0.0",
 	"main": "dist/index.js",
 	"scripts": {
-		"dev": "ts-node-dev -r tsconfig-paths/register --respawn ./app/index.ts"
+		"dev": "ts-node-dev -r tsconfig-paths/register --respawn ./app/index.ts",
+		"compile": "tsc",
+		"check": "tsc --noEmit"
 	},
 	"author": "",
 	"license": "ISC",
