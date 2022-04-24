@@ -4,7 +4,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const discord_js_1 = require("discord.js");
-const Database_1 = __importDefault(require("@/Database"));
+const Database_1 = __importDefault(require("../../Database"));
 const Command = client => {
     function getMessageId(msg) {
         const regex = /[0-9]{18}/;
