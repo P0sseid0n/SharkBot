@@ -5,7 +5,8 @@
 	"scripts": {
 		"dev": "cross-env NODE_ENV=development ts-node-dev -r tsconfig-paths/register --respawn ./app/index.ts",
 		"build": "tsc && tsc-alias",
-		"check": "tsc --noEmit"
+		"check": "tsc --noEmit",
+		"postinstall": "prisma generate"
 	},
 	"author": "",
 	"license": "ISC",
