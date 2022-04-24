@@ -1,4 +1,4 @@
-import { Message, Events, CommandFn } from '../Types'
+import { Message, Events, CommandFn } from '@/Types'
 
 export default class extends Events {
 	run(msg: Message) {

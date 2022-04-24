@@ -1,5 +1,5 @@
 import { Formatters, TextBasedChannel } from 'discord.js'
-import { CommandFn } from '../Types'
+import { CommandFn } from '@/Types'
 
 const Command: CommandFn = client => {
 	function getChannelId(possibleId: string): string | null {

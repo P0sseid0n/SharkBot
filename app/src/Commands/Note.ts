@@ -1,4 +1,4 @@
-import { CommandFn } from '../Types'
+import { CommandFn } from '@/Types'
 import { MessageActionRow, MessageButton, MessageEmbed, TextBasedChannel } from 'discord.js'
 
 import { PrismaClient } from '@prisma/client'

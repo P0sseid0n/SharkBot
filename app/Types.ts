@@ -1,5 +1,5 @@
 import { Message as message } from 'discord.js'
-import Client from './Structures/Client'
+import Client from '@/src/Structures/Client'
 
 export type MessageCommand = { name: string; args: string[] }
 

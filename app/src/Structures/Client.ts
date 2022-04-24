@@ -1,7 +1,7 @@
 import { Client as client, Collection } from 'discord.js'
 import { readdir } from 'fs/promises'
 import path from 'path'
-import { Command, CommandFn, Events } from '../Types'
+import { Command, CommandFn, Events } from '@/Types'
 
 interface CommandListKey {
 	name: string
