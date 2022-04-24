@@ -13,6 +13,35 @@ const Command = client => {
             return false;
         return match[0];
     }
+    async function sendOneNote(noteDb, msg) {
+        const row = new discord_js_1.MessageActionRow().addComponents(new discord_js_1.MessageButton()
+            .setLabel('Ir até a nota')
+            .setStyle('LINK')
+            .setURL(`https://discord.com/channels/${msg.guildId}/${noteDb.channelId}/${noteDb.msgId}`), new discord_js_1.MessageButton().setLabel('Excluir nota').setStyle('DANGER').setCustomId('deleteNote'));
+        const reply = await msg.reply({
+            content: `***Nota encontrada*** \n**ID:** \`\`${noteDb.id}\`\` \n**Titulo:** \`\`${noteDb.title}\`\` `,
+            components: [row],
+        });
+        reply.awaitMessageComponent({ filter: c => c.id !== msg.author.id }).then(interaction => {
+            if (!interaction.isButton())
+                return;
+            if (interaction.customId === 'deleteNote') {
+                Database_1.default.note
+                    .delete({
+                    where: {
+                        id: noteDb.id,
+                    },
+                })
+                    .then(() => {
+                    reply.delete();
+                    msg.reply('**Nota excluída com sucesso**');
+                })
+                    .catch(err => {
+                    interaction.update({ components: [] });
+                });
+            }
+        });
+    }
     return {
         aliases: [],
         async run(msg) {
@@ -51,10 +80,7 @@ const Command = client => {
                     },
                 })
                     .then(noteDb => {
-                    const embed = new discord_js_1.MessageEmbed()
-                        .addField('ID', '``' + noteDb.id + '``')
-                        .addField('Titulo', '``' + noteDb.title + '``');
-                    msg.reply({ content: '**Nota salva**', embeds: [embed] });
+                    msg.reply('**Nota salva**');
                 })
                     .catch(err => {
                     console.error(err);
@@ -62,25 +88,38 @@ const Command = client => {
                 });
             }
             else {
-                const noteDb = await Database_1.default.note.findFirst({
-                    where: {
-                        userId: msg.author.id,
-                        title: {
-                            contains: msg.command.args.join(' '),
+                let notes;
+                if (msg.command.args.length > 0) {
+                    notes = await Database_1.default.note.findMany({
+                        where: {
+                            userId: msg.author.id,
+                            OR: [
+                                {
+                                    title: {
+                                        contains: msg.command.args.join(' '),
+                                    },
+                                },
+                                {
+                                    id: msg.command.args[0],
+                                },
+                            ],
                         },
-                    },
-                });
-                if (!noteDb)
-                    return await msg.reply('Nota não encontrada');
-                console.log(noteDb);
-                const row = new discord_js_1.MessageActionRow().addComponents(new discord_js_1.MessageButton()
-                    .setLabel('Ir até a nota')
-                    .setStyle('LINK')
-                    .setURL(`https://discord.com/channels/${msg.guildId}/${noteDb.channelId}/${noteDb.msgId}`));
-                const embed = new discord_js_1.MessageEmbed()
-                    .addField('ID', '``' + noteDb.id + '``')
-                    .addField('Titulo', '``' + noteDb.title + '``');
-                msg.reply({ content: '**Nota encontrada**', embeds: [embed], components: [row] });
+                    });
+                }
+                else {
+                    notes = await Database_1.default.note.findMany({
+                        where: {
+                            userId: msg.author.id,
+                        },
+                    });
+                }
+                if (notes.length <= 0)
+                    msg.reply('Nenhuma nota encontrada');
+                else if (notes.length == 1)
+                    sendOneNote(notes[0], msg);
+                else {
+                    msg.reply('Multiplas notas encontradas');
+                }
             }
         },
     };

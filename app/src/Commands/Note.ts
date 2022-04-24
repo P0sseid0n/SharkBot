@@ -1,7 +1,8 @@
-import { CommandFn } from '@/Types'
-import { MessageActionRow, MessageButton, MessageEmbed } from 'discord.js'
+import { CommandFn, Message } from '@/Types'
+import { MessageActionRow, MessageButton } from 'discord.js'
 
 import db from '@/Database'
+import { Note } from '@prisma/client'
 
 const Command: CommandFn = client => {
 	function getMessageId(msg: string) {
@@ -11,6 +12,40 @@ const Command: CommandFn = client => {
 		if (!match) return false
 
 		return match[0]
+	}
+
+	async function sendOneNote(noteDb: Note, msg: Message) {
+		const row = new MessageActionRow().addComponents(
+			new MessageButton()
+				.setLabel('Ir até a nota')
+				.setStyle('LINK')
+				.setURL(`https://discord.com/channels/${msg.guildId}/${noteDb.channelId}/${noteDb.msgId}`),
+			new MessageButton().setLabel('Excluir nota').setStyle('DANGER').setCustomId('deleteNote')
+		)
+
+		const reply = await msg.reply({
+			content: `***Nota encontrada*** \n**ID:** \`\`${noteDb.id}\`\` \n**Titulo:** \`\`${noteDb.title}\`\` `,
+			components: [row],
+		})
+
+		reply.awaitMessageComponent({ filter: c => c.id !== msg.author.id }).then(interaction => {
+			if (!interaction.isButton()) return
+			if (interaction.customId === 'deleteNote') {
+				db.note
+					.delete({
+						where: {
+							id: noteDb.id,
+						},
+					})
+					.then(() => {
+						reply.delete()
+						msg.reply('**Nota excluída com sucesso**')
+					})
+					.catch(err => {
+						interaction.update({ components: [] })
+					})
+			}
+		})
 	}
 
 	return {
@@ -52,42 +87,45 @@ const Command: CommandFn = client => {
 						},
 					})
 					.then(noteDb => {
-						const embed = new MessageEmbed()
-							.addField('ID', '``' + noteDb.id + '``')
-							.addField('Titulo', '``' + noteDb.title + '``')
-
-						msg.reply({ content: '**Nota salva**', embeds: [embed] })
+						msg.reply('**Nota salva**')
 					})
 					.catch(err => {
 						console.error(err)
 						msg.reply('Ocorreu um erro ao salvar nota. Tente novamente.')
 					})
 			} else {
-				const noteDb = await db.note.findFirst({
-					where: {
-						userId: msg.author.id,
-						title: {
-							contains: msg.command.args.join(' '),
+				let notes
+
+				if (msg.command.args.length > 0) {
+					notes = await db.note.findMany({
+						where: {
+							userId: msg.author.id,
+
+							OR: [
+								{
+									title: {
+										contains: msg.command.args.join(' '),
+									},
+								},
+								{
+									id: msg.command.args[0],
+								},
+							],
 						},
-					},
-				})
+					})
+				} else {
+					notes = await db.note.findMany({
+						where: {
+							userId: msg.author.id,
+						},
+					})
+				}
 
-				if (!noteDb) return await msg.reply('Nota não encontrada')
-
-				console.log(noteDb)
-
-				const row = new MessageActionRow().addComponents(
-					new MessageButton()
-						.setLabel('Ir até a nota')
-						.setStyle('LINK')
-						.setURL(`https://discord.com/channels/${msg.guildId}/${noteDb.channelId}/${noteDb.msgId}`)
-				)
-
-				const embed = new MessageEmbed()
-					.addField('ID', '``' + noteDb.id + '``')
-					.addField('Titulo', '``' + noteDb.title + '``')
-
-				msg.reply({ content: '**Nota encontrada**', embeds: [embed], components: [row] })
+				if (notes.length <= 0) msg.reply('Nenhuma nota encontrada')
+				else if (notes.length == 1) sendOneNote(notes[0], msg as Message)
+				else {
+					msg.reply('Multiplas notas encontradas')
+				}
 			}
 		},
 	}
